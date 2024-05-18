@@ -13,8 +13,6 @@ type cliCommand struct {
 	callback    func()
 }
 
-var exit int = 0
-
 func commands() map[string]cliCommand {
 	return map[string]cliCommand{
 		"help": {
@@ -36,7 +34,7 @@ func commandHelp() {
 
 func commandExit() {
 	fmt.Println("Closing the pokedex")
-	exit = 1
+	os.Exit(0)
 }
 
 func printPrompt() {
@@ -54,9 +52,6 @@ func main() {
 			command.callback()
 		} else {
 			fmt.Println("Invalid command")
-		}
-		if exit == 1 {
-			return
 		}
 		printPrompt()
 	}
