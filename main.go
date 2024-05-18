@@ -7,36 +7,6 @@ import (
 	"strings"
 )
 
-type cliCommand struct {
-	name        string
-	description string
-	callback    func()
-}
-
-func commands() map[string]cliCommand {
-	return map[string]cliCommand{
-		"help": {
-			name:        "help",
-			description: "Displays a help message",
-			callback:    commandHelp,
-		},
-		"exit": {
-			name:        "exit",
-			description: "Exit the Pokedex",
-			callback:    commandExit,
-		},
-	}
-}
-
-func commandHelp() {
-	fmt.Println("Type 'exit' to exit the program")
-}
-
-func commandExit() {
-	fmt.Println("Closing the pokedex")
-	os.Exit(0)
-}
-
 func printPrompt() {
 	fmt.Printf("Pokedex > ")
 }
