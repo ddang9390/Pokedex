@@ -1,12 +1,14 @@
 package main
 
 import (
+	"Pokedex/internal/pokecache"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"time"
 )
 
 type cliCommand struct {
@@ -27,6 +29,7 @@ type Locations struct {
 
 var locationURL string = "https://pokeapi.co/api/v2/location-area/"
 var locs = Locations{}
+var cache = pokecache.NewCache(time.Duration(5))
 
 func commands() map[string]cliCommand {
 	return map[string]cliCommand{
@@ -83,14 +86,22 @@ func commandMapB() error {
 }
 
 func mapLocations() error {
-	res, err := http.Get(locationURL)
-	if err != nil {
-		return err
-	}
-	body, err := io.ReadAll(res.Body)
-	res.Body.Close()
+	body, ok := cache.Get(locationURL)
+	if !ok {
+		res, err := http.Get(locationURL)
+		if err != nil {
+			return err
+		}
+		body, err = io.ReadAll(res.Body)
+		if err != nil {
+			return err
+		}
 
-	err = json.Unmarshal(body, &locs)
+		res.Body.Close()
+		cache.Add(locationURL, body)
+	}
+
+	err := json.Unmarshal(body, &locs)
 	if err != nil {
 		return err
 	}
