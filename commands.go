@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"os"
 	"time"
@@ -37,8 +38,18 @@ type ExploreResults struct {
 	} `json:"pokemon_encounters"`
 }
 
+type Pokemon struct {
+	Name            string `json:"name"`
+	Base_experience int    `json:"base_experience"`
+}
+
 var locationURL string = "https://pokeapi.co/api/v2/location-area/"
+var exploreURL string = "https://pokeapi.co/api/v2/location-area/"
+var pokURL string = "https://pokeapi.co/api/v2/pokemon/"
+
 var locs = Locations{}
+var caught_pokemon = make(map[string]Pokemon)
+
 var cache = pokecache.NewCache(time.Duration(5))
 
 func commands() map[string]cliCommand {
@@ -68,7 +79,26 @@ func commands() map[string]cliCommand {
 			description: "Show names of pokemon in location",
 			callback:    commandExplore,
 		},
+		"catch": {
+			name:        "catch",
+			description: "Try catching pokemon",
+			callback:    commandCatch,
+		},
 	}
+}
+
+func getFromAPI(url string) ([]byte, error) {
+	res, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	res.Body.Close()
+	return body, nil
 }
 
 func commandHelp(parameters []string) error {
@@ -103,16 +133,11 @@ func commandMapB(parameters []string) error {
 func mapLocations() error {
 	body, ok := cache.Get(locationURL)
 	if !ok {
-		res, err := http.Get(locationURL)
+		var err error
+		body, err = getFromAPI(locationURL)
 		if err != nil {
 			return err
 		}
-		body, err = io.ReadAll(res.Body)
-		if err != nil {
-			return err
-		}
-
-		res.Body.Close()
 		cache.Add(locationURL, body)
 	}
 
@@ -130,13 +155,9 @@ func mapLocations() error {
 func commandExplore(parameters []string) error {
 	fmt.Println("Exploring " + parameters[0])
 	fmt.Println("Found pokemon:")
-	url := locationURL + parameters[0]
+	url := exploreURL + parameters[0]
 
-	res, err := http.Get(url)
-	if err != nil {
-		return err
-	}
-	body, err := io.ReadAll(res.Body)
+	body, err := getFromAPI(url)
 	if err != nil {
 		return err
 	}
@@ -148,6 +169,34 @@ func commandExplore(parameters []string) error {
 	}
 	for _, pok := range results.Pokemon_encounters {
 		fmt.Println("- " + pok.Pokemon.Name)
+	}
+
+	return nil
+}
+
+func commandCatch(parameters []string) error {
+	url := pokURL + parameters[0]
+
+	body, err := getFromAPI(url)
+	if err != nil {
+		return err
+	}
+	results := Pokemon{}
+	err = json.Unmarshal(body, &results)
+
+	if err != nil {
+		return err
+	}
+	fmt.Println("Throwing a Pokeball at " + results.Name)
+	chance := rand.Intn(results.Base_experience * 2)
+
+	if chance > results.Base_experience {
+		fmt.Println(results.Name + " was caught!")
+		caught_pokemon[results.Name] = results
+
+		fmt.Println(caught_pokemon)
+	} else {
+		fmt.Println(results.Name + " escaped!")
 	}
 
 	return nil
