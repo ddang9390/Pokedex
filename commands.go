@@ -102,6 +102,11 @@ func commands() map[string]cliCommand {
 			description: "Inspect caught pokemon",
 			callback:    commandInspect,
 		},
+		"pokedex": {
+			name:        "pokdex",
+			description: "Examine caught pokemon",
+			callback:    commandPokedex,
+		},
 	}
 }
 
@@ -240,5 +245,14 @@ func commandInspect(parameters []string) error {
 		fmt.Printf("    - %#v\n", t.Type.Name)
 	}
 
+	return nil
+}
+
+func commandPokedex(parameters []string) error {
+	fmt.Println("Your Pokedex:")
+
+	for k, _ := range caught_pokemon {
+		fmt.Printf("- %#v\n", k)
+	}
 	return nil
 }
