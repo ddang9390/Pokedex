@@ -41,6 +41,19 @@ type ExploreResults struct {
 type Pokemon struct {
 	Name            string `json:"name"`
 	Base_experience int    `json:"base_experience"`
+	Height          int    `json:"height"`
+	Weight          int    `json:"weight"`
+	Stats           []struct {
+		Stat struct {
+			Name string
+		}
+		Base_Stat int `json:"base_stat"`
+	} `json:"stats"`
+	Types []struct {
+		Type struct {
+			Name string
+		}
+	} `json:"types"`
 }
 
 var locationURL string = "https://pokeapi.co/api/v2/location-area/"
@@ -83,6 +96,11 @@ func commands() map[string]cliCommand {
 			name:        "catch",
 			description: "Try catching pokemon",
 			callback:    commandCatch,
+		},
+		"inspect": {
+			name:        "inspect",
+			description: "Inspect caught pokemon",
+			callback:    commandInspect,
 		},
 	}
 }
@@ -193,10 +211,33 @@ func commandCatch(parameters []string) error {
 	if chance > results.Base_experience {
 		fmt.Println(results.Name + " was caught!")
 		caught_pokemon[results.Name] = results
-
-		fmt.Println(caught_pokemon)
 	} else {
 		fmt.Println(results.Name + " escaped!")
+	}
+
+	return nil
+}
+
+func commandInspect(parameters []string) error {
+	pok := parameters[0]
+	val, ok := caught_pokemon[pok]
+
+	if !ok {
+		fmt.Println("You have not caught this pokemon")
+		return nil
+	}
+	fmt.Printf("Name: %#v\n", val.Name)
+	fmt.Printf("Height: %#v\n", val.Height)
+	fmt.Printf("Weight: %#v\n", val.Weight)
+
+	fmt.Println("Stats:")
+	for _, stat := range val.Stats {
+		fmt.Printf("    -%#v: %#v\n", stat.Stat.Name, stat.Base_Stat)
+	}
+
+	fmt.Println("Types:")
+	for _, t := range val.Types {
+		fmt.Printf("    - %#v\n", t.Type.Name)
 	}
 
 	return nil
